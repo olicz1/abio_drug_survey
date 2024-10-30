@@ -1,95 +1,104 @@
 <template>
-    <div>
-      <!-- Display unique drugDisease tags from page1_result -->
-      <el-tag
-        class="button-new-tag"
-        v-for="tag in uniquePage1DiseaseTags"
-        :key="tag"
-        effect="dark"
-        type="warning"
-        :disable-transitions="false"
-      >
-        {{ tag }}
-      </el-tag>
-  
-      <!-- Display drugDisease tags from form -->
-      <el-tag
-        class="button-new-tag"
-        v-for="tag in diseaseTags"
-        :key="tag"
-        effect="dark"
-        :disable-transitions="false"
-      >
-        {{ tag }}
-        <el-popconfirm title="确认删除?" @confirm="removeTagFromList(tag)">
-            <i slot="reference" class="el-icon-close close-icon"></i>
-        </el-popconfirm>
-      </el-tag>
-  
-      <!-- Add new tag input -->
+  <div>
+    <!-- Display unique drugDisease tags from page1_result -->
+    <el-tag
+      class="button-new-tag"
+      v-for="tag in uniquePage1DiseaseTags"
+      :key="tag"
+      effect="dark"
+      type="warning"
+      :disable-transitions="false"
+    >
+      {{ tag }}
+    </el-tag>
+
+    <!-- Display drugDisease tags from form -->
+    <el-tag
+      class="button-new-tag"
+      v-for="tag in diseaseTags"
+      :key="tag"
+      effect="dark"
+      :disable-transitions="false"
+    >
+      {{ tag }}
+      <el-popconfirm title="确认删除?" @confirm="removeTagFromList(tag)">
+          <i slot="reference" class="el-icon-close close-icon"></i>
+      </el-popconfirm>
+    </el-tag>
+
+    <!-- Add new tag dialog -->
+    <el-button class="button-new-tag" style="margin: 10px;" @click="showInput">
+      + 如果有新的{{ addButtonText }}请添加
+    </el-button>
+
+    <!-- New el-dialog for input -->
+    <el-dialog
+      :title="addButtonText"
+      :visible.sync="inputVisible"
+      @close="handleDialogClose"
+    >
       <el-input
-        v-if="inputVisible"
-        class="input-new-tag"
         v-model="inputValue"
+        placeholder="输入新标签"
         @keyup.enter.native="addTagToList"
-        @blur="addTagToList"
-        ref="saveTagInput"
-        style="width: 100%; margin: 20px;"
       >
       </el-input>
-      <!-- Button to trigger input -->
-      <el-button class="button-new-tag" style="margin: 10px;" @click="showInput">+ 如果有新的{{ this.addButtonText }}请添加</el-button>
-    </div>
-  </template>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="handleDialogClose">取消</el-button>
+        <el-button type="primary" @click="addTagToList">确认</el-button>
+      </span>
+    </el-dialog>
+  </div>
+</template>
   
-  <script>
-  export default {
-    name: 'DrugDiseaseTags',
-    props: {
-      page1ResultUniqueDrugDisease: {
-        type: Array,
-        required: true,
-      },
-      formDrugDisease: {
-        type: Array,
-        required: true,
-      },
-      addButtonText: {
-        type: String,
-        required: true,
+<script>
+export default {
+  name: 'DrugDiseaseTags',
+  props: {
+    page1ResultUniqueDrugDisease: {
+      type: Array,
+      required: true,
+    },
+    formDrugDisease: {
+      type: Array,
+      required: true,
+    },
+    addButtonText: {
+      type: String,
+      required: true,
+    }
+  },
+  data() {
+    return {
+      inputVisible: false,
+      inputValue: '',
+      uniquePage1DiseaseTags: this.page1ResultUniqueDrugDisease,
+      diseaseTags: this.formDrugDisease,
+    };
+  },
+  methods: {
+    removeTagFromList(tag) {
+      const index = this.diseaseTags.indexOf(tag);
+      if (index !== -1) {
+        this.diseaseTags.splice(index, 1);
       }
     },
-    data() {
-      return {
-        inputVisible: false,
-        inputValue: '',
-        uniquePage1DiseaseTags: this.page1ResultUniqueDrugDisease,
-        diseaseTags: this.formDrugDisease,
-      };
+    showInput() {
+      this.inputVisible = true;
     },
-    methods: {
-      removeTagFromList(tag) {
-        const index = this.diseaseTags.indexOf(tag);
-        if (index !== -1) {
-          this.diseaseTags.splice(index, 1);
-        }
-      },
-      showInput() {
-        this.inputVisible = true;
-        this.$nextTick(() => {
-          this.$refs.saveTagInput.$refs.input.focus();
-        });
-      },
-      addTagToList() {
-        if (this.inputValue) {
-          this.diseaseTags.push(this.inputValue);
-        }
-        this.inputVisible = false;
-        this.inputValue = '';
-      },
+    addTagToList() {
+      if (this.inputValue.trim()) {
+        this.diseaseTags.push(this.inputValue.trim());
+      }
+      this.handleDialogClose(); // Close dialog after adding the tag
     },
-  };
-  </script>
+    handleDialogClose() {
+      this.inputVisible = false;
+      this.inputValue = ''; // Clear input value
+    }
+  },
+};
+</script>
   
   <style scoped>
   /* Custom styles */

@@ -247,12 +247,60 @@
       <el-card v-if="this.page===3">
         <h3>药物评分（没有相同药物）</h3>
         <span>...</span>
+        <!-- 机制 -->
+        <el-card>
+          <div style="display: flex; align-items: center;">
+            <!-- Text Input: 剂型 -->
+            <span style="margin-right: 10px; white-space: nowrap;">
+              药物剂型<strong>（选择药物剂型，若没有合适选项，可输入并点击创建新药物剂型）</strong> <span style="color: red;"> * </span>
+            </span>
+            <el-select
+              v-model="form.dosageForm"
+              style="flex-grow: 1;" 
+              placeholder="选择药物剂型，若没有合适选项，可输入并点击创建新剂型。"
+              filterable
+              allow-create
+            >
+              <el-option 
+                v-for="(option, index) in page1_result.unique_deliveryMedium"
+                :key="index"
+                :label="option"
+                :value="option"
+              ></el-option>
+            </el-select>
+          </div>
+        </el-card>
+
+        <!-- 靶点 -->
+        <el-card>
+          <div style="display: flex; align-items: center;">
+            <span style="margin-right: 10px; white-space: nowrap;">
+              靶点<strong>（选择靶点，若没有合适选项，可输入并点击创建）</strong> <span style="color: red;"> * </span>
+            </span>
+            <el-select
+              v-model="form.drugTarget"
+              style="flex-grow: 1;"
+              placeholder="选择靶点，若没有合适选项，可输入并点击创建。"
+              multiple
+              filterable
+              allow-create
+            >
+              <el-option 
+                v-for="(option, index) in page1_result.unique_dr"
+                :key="index"
+                :label="option"
+                :value="option"
+              ></el-option>
+            </el-select>
+          </div>
+        </el-card>
       </el-card>
 
       <!-- Page 4: Final Score -->
       <el-card v-if="this.page===4">
-        <h3>总评分：<span style="color: green;">50</span></h3>
-        <el-collapse v-model="page4_control.activeNames">
+        <h3>总评分：<span style="color: green;">{{ this.page4_control.scoreData.score }}</span></h3>
+        <ScoreDisplay :scoreData="page4_control.scoreData" />
+        <el-collapse v-if="false" v-model="page4_control.activeNames">
           <el-collapse-item title="Consistency" name="1">
             <div>Consistent with real life: in line with the process and logic of real life, and comply with languages and habits that the users are used to;</div>
             <div>Consistent within interface: all elements should be consistent, such as: design style, icons and texts, position of elements, etc.</div>
@@ -285,9 +333,11 @@
 <script>
 import axios from 'axios';
 import ControlledTags from './components/ControlledTags.vue';
+import ScoreDisplay from './components/ScoreDisplay.vue';
 export default {
   components: {
     ControlledTags,
+    ScoreDisplay,
   },
   data() {
     return {
@@ -317,7 +367,11 @@ export default {
         showTable: false,
       },
       page4_control: {
-        activeNames: []
+        activeNames: [],
+        scoreData: {
+          score: 0,
+          score_procedure: [],
+        },
       },
       
       page: 1,
@@ -385,12 +439,16 @@ export default {
     },
     async submitPage2() {
       let data = this.form;
+      data.page1_result = this.page1_result;
+      
       await axios.post('/apps/drug_score/check_page2', data)
         .then(response => {
           if (response.data.code === 500) {
             this.$message.error(response.data.error);
           } else {
             this.page = 4
+            this.page4_control.scoreData.score = response.data.data.content.score
+            this.page4_control.scoreData.score_procedure = response.data.data.content.score_procedure
           }
         })
         .catch(error => {
