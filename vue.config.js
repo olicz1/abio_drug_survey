@@ -14,7 +14,7 @@ module.exports = defineConfig({
     //port: 8000,
     proxy: {
       '/apps': {
-        target: 'http://172.21.1.124:8000/apps',
+        target: 'http://127.0.0.1:8000/apps',
         changeOrigin: true,
         pathRewrite: {
           '^/apps': ''

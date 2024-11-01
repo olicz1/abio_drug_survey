@@ -12,7 +12,7 @@
     <div style="background-color: #F3F3F3; border-top: 3px solid #19B394; padding: 20px; height: 100vh">
 
       <!-- Page 1: Molecular Information -->
-      <el-card v-if="page===1">
+      <el-card v-show="page===1">
         <h3>分子式信息</h3>
         <!-- Row container for layout -->
         <el-row :gutter="10">
@@ -26,7 +26,7 @@
           </el-col>
 
           <!-- Input SMILES (shown if '是') -->
-          <el-col v-if="form.isSMILES === '是'" :span="18">
+          <el-col v-show="form.isSMILES === '是'" :span="18">
             <div style="display: flex; align-items: center;">
               <span style="margin-right: 10px;">输入SMILES <span style="color: red;"> * </span></span>
               <el-input
@@ -38,7 +38,7 @@
           </el-col>
 
           <!-- Draw SMILES (shown if '否') -->
-          <el-col v-if="form.isSMILES === '否'" :span="18">
+          <el-col v-show="form.isSMILES === '否'" :span="18">
             <span>画出分子结构式</span> <span style="color: red;"> * </span>
             {{ this.form.smilesInput }}
             <el-button v-show="this.smileEditor1Visible===false" icon="el-icon-edit" circle @click="editSmiles1"></el-button>
@@ -50,7 +50,7 @@
               src="/ketcher-standalone-v2.6.4/standalone/index.html"
               width="100%"
               height="600"
-              style="display: block; margin: 0 auto; border: 0;"
+              style="margin: 0 auto; border: 0;"
             />
           </el-col>
           
@@ -59,7 +59,7 @@
       </el-card>
       
       <!-- Page 2: Drug Scoring -->
-      <el-card v-if="page===2">
+      <el-card v-show="page===2">
         <h3>药物评分</h3>
 
         <!-- Text Input: 剂型 -->
@@ -152,7 +152,7 @@
       </el-card>
 
       <!-- Page2: display table of similar drug -->
-      <el-card v-if="page===2">
+      <el-card v-show="page===2">
         <el-button type="text" @click="toggleTable">{{ page2_control.showTable ? '隐藏' : '展示' }}相同药物表格</el-button>
         <el-table v-if="this.page2_control.showTable" :data="this.page1_result.similarity_dataframe" style="width: 100%">
           
@@ -244,38 +244,14 @@
       </el-card>
 
       <!-- Page 3: Drug Scoring without similar molecule -->
-      <el-card v-if="this.page===3">
+      <el-card v-show="this.page===3">
         <h3>药物评分（没有相同药物）</h3>
-        <span>...</span>
-        <!-- 机制 -->
-        <el-card>
-          <div style="display: flex; align-items: center;">
-            <!-- Text Input: 剂型 -->
-            <span style="margin-right: 10px; white-space: nowrap;">
-              药物剂型<strong>（选择药物剂型，若没有合适选项，可输入并点击创建新药物剂型）</strong> <span style="color: red;"> * </span>
-            </span>
-            <el-select
-              v-model="form.dosageForm"
-              style="flex-grow: 1;" 
-              placeholder="选择药物剂型，若没有合适选项，可输入并点击创建新剂型。"
-              filterable
-              allow-create
-            >
-              <el-option 
-                v-for="(option, index) in page1_result.unique_deliveryMedium"
-                :key="index"
-                :label="option"
-                :value="option"
-              ></el-option>
-            </el-select>
-          </div>
-        </el-card>
 
         <!-- 靶点 -->
         <el-card>
           <div style="display: flex; align-items: center;">
             <span style="margin-right: 10px; white-space: nowrap;">
-              靶点<strong>（选择靶点，若没有合适选项，可输入并点击创建）</strong> <span style="color: red;"> * </span>
+              靶点<strong>（选择靶点，若没有合适选项，可输入并点击创建）</strong> 
             </span>
             <el-select
               v-model="form.drugTarget"
@@ -283,10 +259,11 @@
               placeholder="选择靶点，若没有合适选项，可输入并点击创建。"
               multiple
               filterable
-              allow-create
+              :filter-method="fetchOptions"
+              @input="fetchOptions"
             >
               <el-option 
-                v-for="(option, index) in page1_result.unique_dr"
+                v-for="(option, index) in page1_result.options_target"
                 :key="index"
                 :label="option"
                 :value="option"
@@ -294,31 +271,66 @@
             </el-select>
           </div>
         </el-card>
+
+        <!-- 机制 -->
+        <el-card>
+          <div style="display: flex; align-items: center;">
+            <!-- Text Input: 剂型 -->
+            <span style="margin-right: 10px; white-space: nowrap;">
+              作用机制<strong>（选择作用机制，若没有合适选项，可输入并点击创建新作用机制）</strong>
+            </span>
+            <el-select
+              v-model="form.drugMechanism"
+              style="flex-grow: 1;" 
+              placeholder="选择作用机制，若没有合适选项，可输入并点击创建新作用机制。"
+              multiple
+              filterable
+              allow-create
+            >
+              <el-option 
+                v-for="(option, index) in page1_result.options_mechanism"
+                :key="index"
+                :label="option"
+                :value="option"
+              ></el-option>
+            </el-select>
+          </div>
+        </el-card>
+
+        <!-- 母核 -->
+        <el-card>
+          <el-row :gutter="10">
+            <!-- Radio Group: 是否有SMILES -->
+            <el-col :span="6" style="padding: 5px;">
+                <span style="margin-right: 10px;">请输入母核SMILES <span style="color: red;"> * </span></span> 
+            </el-col>
+
+            <!-- Draw SMILES (shown if '否') -->
+            <el-col :span="18">
+              <span>画出母核分子结构式</span> <span style="color: red;"> * </span>
+              {{ this.form.coreCompound }}
+              <el-button v-show="!this.smileEditor2Visible" icon="el-icon-edit" circle @click="editSmiles2"></el-button>
+              <el-button v-show="this.smileEditor2Visible" type="success" icon="el-icon-check" circle @click="setSmiles2"></el-button>
+              <iframe
+                v-show="this.smileEditor2Visible"
+                id="idKetcher2"
+                class="frame"
+                src="/ketcher-standalone-v2.6.4/standalone/index.html"
+                width="100%"
+                height="600"
+                style="margin: 0 auto; border: 0;"
+              />
+            </el-col>
+            
+          </el-row>
+        </el-card>
+        <el-button style="margin-top: 20px;" type="primary" @click="submitPage3">提交评分信息</el-button>
       </el-card>
 
       <!-- Page 4: Final Score -->
-      <el-card v-if="this.page===4">
+      <el-card v-show="this.page===4">
         <h3>总评分：<span style="color: green;">{{ this.page4_control.scoreData.score }}</span></h3>
         <ScoreDisplay :scoreData="page4_control.scoreData" />
-        <el-collapse v-if="false" v-model="page4_control.activeNames">
-          <el-collapse-item title="Consistency" name="1">
-            <div>Consistent with real life: in line with the process and logic of real life, and comply with languages and habits that the users are used to;</div>
-            <div>Consistent within interface: all elements should be consistent, such as: design style, icons and texts, position of elements, etc.</div>
-          </el-collapse-item>
-          <el-collapse-item title="Feedback" name="2">
-            <div>Operation feedback: enable the users to clearly perceive their operations by style updates and interactive effects;</div>
-            <div>Visual feedback: reflect current state by updating or rearranging elements of the page.</div>
-          </el-collapse-item>
-          <el-collapse-item title="Efficiency" name="3">
-            <div>Simplify the process: keep operating process simple and intuitive;</div>
-            <div>Definite and clear: enunciate your intentions clearly so that the users can quickly understand and make decisions;</div>
-            <div>Easy to identify: the interface should be straightforward, which helps the users to identify and frees them from memorizing and recalling.</div>
-          </el-collapse-item>
-          <el-collapse-item title="Controllability" name="4">
-            <div>Decision making: giving advices about operations is acceptable, but do not make decisions for the users;</div>
-            <div>Controlled consequences: users should be granted the freedom to operate, including canceling, aborting or terminating current operation.</div>
-          </el-collapse-item>
-        </el-collapse>
       </el-card>
 
       <!-- Progress Bar -->
@@ -344,6 +356,7 @@ export default {
       surveyTitle: "创新药评分系统",
       logoHeight: "100px",
       smileEditor1Visible: true,
+      smileEditor2Visible: true,
       form: {
         isSMILES: "",
         smilesInput: "COC1=CC2=C(C=C1)N=C(N2)S(=O)CC1=NC=C(C)C(OC)=C1C",
@@ -353,7 +366,8 @@ export default {
         drugDisease: [],
         therapClass: [],
         drugMechanism: "",
-        drugTarget: ""
+        drugTarget: "",
+        coreCompound: ""
       },
       page1_result: {
         has_same_smiles: false,
@@ -362,6 +376,8 @@ export default {
         unique_therapClass: [],
         unique_deliveryRoute: [],
         unique_deliveryMedium: [],
+        options_target: [],
+        options_mechanism: []
       },
       page2_control: {
         showTable: false,
@@ -397,7 +413,7 @@ export default {
     async setSmiles1() {
       let ketcher_setup = document.getElementById('idKetcher').contentWindow.ketcher;
       await ketcher_setup.getSmiles().then(res => {
-        this.$message(res);
+        this.$message.success("分子式设置成功");
         this.form.smilesInput = res
       }).catch(e => {
         console.log(e)
@@ -405,31 +421,35 @@ export default {
       })
       this.smileEditor1Visible = false
     },
+    async setKetcher2() {
+      let ketcher_setup = document.getElementById('idKetcher2').contentWindow.ketcher;
+      await ketcher_setup.setMolecule(this.form.coreCompound);
+    },
     async submitPage1() {
       let data = this.form;
-      await axios.post('/apps/drug_score/check_page1', data)
-        .then(response => {
-          if (response.data.code === 500) {
-            this.$message.error(response.data.error);
-          } else {
-            if (response.data.data.content.has_same_smiles === true) {
-              this.page1_result.has_same_smiles = response.data.data.content.has_same_smiles
-              this.page1_result.similarity_dataframe = response.data.data.content.dataframe
-              
-              this.page1_result.unique_drugDisease = response.data.data.content.unique_values['Drug Disease']
-              this.page1_result.unique_therapClass = response.data.data.content.unique_values['Therapeutic Class']
-              this.page1_result.unique_deliveryMedium = response.data.data.content.unique_values['Delivery Medium']
-              this.page1_result.unique_deliveryRoute = response.data.data.content.unique_values['Delivery Route']
-              this.page = 2
-            } else {
-              this.page = 3
-            }
-            
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);  // Handle error response
-        });
+      let response = await axios.post('/apps/drug_score/check_page1', data);
+      if (response.data.code === 500) {
+        this.$message.error(response.data.error);
+      } else {
+        if (response.data.data.content.has_same_smiles === true) {
+          this.page1_result.has_same_smiles = response.data.data.content.has_same_smiles
+          this.page1_result.similarity_dataframe = response.data.data.content.dataframe
+          
+          this.page1_result.unique_drugDisease = response.data.data.content.unique_values['Drug Disease']
+          this.page1_result.unique_therapClass = response.data.data.content.unique_values['Therapeutic Class']
+          this.page1_result.unique_deliveryMedium = response.data.data.content.unique_values['Delivery Medium']
+          this.page1_result.unique_deliveryRoute = response.data.data.content.unique_values['Delivery Route']
+          this.page = 2
+        } else {
+          this.page1_result.options_target = response.data.data.content.unique_values['Target']
+          this.page1_result.options_mechanism = response.data.data.content.unique_values['Mechanism Of Action']
+          this.form.coreCompound = response.data.data.content.smiles_value
+          this.page = 3
+          let ketcher_setup = document.getElementById('idKetcher2').contentWindow.ketcher;
+          await ketcher_setup.setMolecule(this.form.coreCompound);
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
 
@@ -455,6 +475,54 @@ export default {
           console.error('Error:', error);  // Handle error response
         });
     },
+
+    // Page 3 control
+    async fetchOptions(query) {
+      if (!query) {
+        this.page1_result.options_target = []; // Clear options if the query is empty
+        return;
+      }
+
+      try {
+        let data = {keyword: query}
+        let response = await axios.post('/apps/drug_score/get_ncbi', data)
+        this.page1_result.options_target = response.data.data.content.search_list
+      } catch (error) {
+        console.error('Error fetching options:', error)
+      }
+    },
+    async editSmiles2() {
+      this.smileEditor2Visible = !this.smileEditor2Visible
+    },
+    async setSmiles2() {
+      let ketcher_setup = document.getElementById('idKetcher2').contentWindow.ketcher;
+      await ketcher_setup.getSmiles().then(res => {
+        this.$message.success("分子式设置成功");
+        this.form.coreCompound = res
+      }).catch(e => {
+        console.log(e)
+        this.$message.error('获取 SMILES2 失败')
+      })
+      this.smileEditor2Visible = !this.smileEditor2Visible
+    },
+    async submitPage3() {
+      let data = this.form;
+      
+      await axios.post('/apps/drug_score/check_page3', data)
+        .then(response => {
+          if (response.data.code === 500) {
+            this.$message.error(response.data.error);
+          } else {
+            this.page = 4
+            this.page4_control.scoreData.score = response.data.data.content.score
+            this.page4_control.scoreData.score_procedure = response.data.data.content.score_procedure
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);  // Handle error response
+        });
+    },
+    
 
 
     // Handle form submission

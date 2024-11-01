@@ -72,9 +72,19 @@ export default {
     return {
       inputVisible: false,
       inputValue: '',
-      uniquePage1DiseaseTags: this.page1ResultUniqueDrugDisease,
-      diseaseTags: this.formDrugDisease,
+      uniquePage1DiseaseTags: [...this.page1ResultUniqueDrugDisease],
+      diseaseTags: [...this.formDrugDisease],
     };
+  },
+  watch: {
+    // Watch for changes in the page1ResultUniqueDrugDisease prop
+    page1ResultUniqueDrugDisease(newVal) {
+      this.uniquePage1DiseaseTags = [...newVal];
+    },
+    // Watch for changes in the formDrugDisease prop
+    formDrugDisease(newVal) {
+      this.diseaseTags = [...newVal];
+    }
   },
   methods: {
     removeTagFromList(tag) {
@@ -89,8 +99,9 @@ export default {
     addTagToList() {
       if (this.inputValue.trim()) {
         this.diseaseTags.push(this.inputValue.trim());
+        this.$emit('update:formDrugDisease', this.diseaseTags); // Emit change to parent
       }
-      this.handleDialogClose(); // Close dialog after adding the tag
+      this.handleDialogClose();
     },
     handleDialogClose() {
       this.inputVisible = false;
@@ -99,7 +110,7 @@ export default {
   },
 };
 </script>
-  
+
   <style scoped>
   /* Custom styles */
   .el-card {
